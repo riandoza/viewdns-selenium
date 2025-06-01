@@ -195,4 +195,4 @@ cython_debug/
 downloaded_files/
 latest_logs/
 target.txt
-results.txt
+result.txt

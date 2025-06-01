@@ -3,7 +3,7 @@ import os
 import time
 
 from bs4 import BeautifulSoup
-from seleniumbase import SB
+from seleniumbase import SB, decorators
 
 
 def add_text(path, s):
@@ -22,45 +22,50 @@ def wait_for_string(string_variable, timeout=60):
         time.sleep(1)
 
 
-file_path = "target.txt"
-if os.path.exists(file_path):
-    try:
-        with SB(uc=True, test=True, locale="en") as sb, open("target.txt") as file:
-            # Iterate through each line in the file
-            for line in file:
-                processed_line = line.strip()
-                print(f"processing: {processed_line}")
-                url = f"https://viewdns.info/reverseip/?host={processed_line}&t=1"
-                sb.open(url)
-                sb.activate_cdp_mode(url)
-                while "a moment" in sb.get_title():
-                    sb.uc_gui_click_captcha()
-                    sb.sleep(2)
+@decorators.retry_on_exception(tries=6, delay=1, backoff=2, max_delay=32)
+def browsing(file_path):
+    if os.path.exists(file_path):
+        try:
+            with SB(uc=True, test=True, locale="en") as sb, open("target.txt") as file:
+                # Iterate through each line in the file
+                for line in file:
+                    processed_line = line.strip()
+                    print(f"processing: {processed_line}")
+                    url = f"https://viewdns.info/reverseip/?host={processed_line}&t=1"
+                    sb.open(url)
+                    sb.activate_cdp_mode(url)
+                    while "a moment" in sb.get_title():
+                        sb.uc_gui_click_captcha()
+                        sb.sleep(2)
 
-                source = sb.get_page_source()
-                try:
-                    output = wait_for_string(source)
-                    soup = BeautifulSoup(source, "html.parser")
-                    table = soup.find("table", attrs={"class": "min-w-full"})
-                    rows = []
+                    source = sb.get_page_source()
                     try:
-                        for row in table.find_all("tr")[1:]:
-                            cells = [td.text.strip() for td in row.find("td", attrs={"class": "font-medium"})]
-                            rows.append("".join(cells))
-                        for row in rows:
-                            add_text("./result.txt", row)
-                    except AttributeError:
-                        add_text("./recheck.txt", processed_line)
-                    except Exception as e:
+                        output = wait_for_string(source)
+                        soup = BeautifulSoup(source, "html.parser")
+                        table = soup.find("table", attrs={"class": "min-w-full"})
+                        rows = []
+                        try:
+                            for row in table.find_all("tr")[1:]:
+                                cells = [td.text.strip() for td in row.find("td", attrs={"class": "font-medium"})]
+                                rows.append("".join(cells))
+                            for row in rows:
+                                add_text("./result.txt", row)
+                        except AttributeError:
+                            add_text("./recheck.txt", processed_line)
+                        except Exception as e:
+                            print(e)
+
+                    except TimeoutError as e:
                         print(e)
 
-                except TimeoutError as e:
-                    print(e)
+                    gc.collect()
+                    sb.sleep(5)
 
-                gc.collect()
-                sb.sleep(5)
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+    else:
+        print(f"Error: The file '{file_path}' does not exist.")
 
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-else:
-    print(f"Error: The file '{file_path}' does not exist.")
+
+if __name__ == "__main__":
+    browsing("target.txt")
