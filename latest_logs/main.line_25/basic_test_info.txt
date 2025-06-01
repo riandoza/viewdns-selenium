@@ -1,0 +1,16 @@
+main.py:25:SB
+--------------------------------------------------------------------
+Last Page: chrome://new-tab-page/
+ Duration: 0.00s
+  Browser: Chrome 136.0.7103.114
+   Driver: chromedriver 136.0.7103.113
+Timestamp: 1748797926  (Unix Timestamp)
+     Date: Monday, 2 June 2025
+     Time: 12:12:06 AM  (WIB, UTC+07:00)
+--------------------------------------------------------------------
+Traceback:
+  Traceback (most recent call last):
+  File "/Users/arrazka/tools/viewdns-selenium/main.py", line 25, in <module>
+    with SB(uc=True, test=True, locale="en") as sb, open("target.txt") as file:
+                                                    ^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'target.txt'
